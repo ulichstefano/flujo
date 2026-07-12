@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="Flujo — Control de ingresos y gastos para negocios pequeños. Simple, rápido y desde cualquier dispositivo.">
+<meta name="theme-color" content="#0f172a">
+<link rel="apple-touch-icon" href="flujo-icon.png">
+<title>Flujo · Finanzas claras para tu negocio</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --primary: #0f172a; --accent: #0ea5e9; --accent2: #6366f1;
+    --bg: #f8fafc; --card: #ffffff; --text: #1e293b; --muted: #64748b;
+    --border: #e2e8f0; --green: #16a34a;
+  }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: var(--bg); color: var(--text); line-height: 1.6; }
+
+  .topbar { display: flex; justify-content: space-between; align-items: center; padding: 16px 20px; max-width: 1000px; margin: 0 auto; }
+  .brand { display: flex; align-items: center; gap: 10px; font-weight: 800; font-size: 1.15rem; }
+  .logo-f { width: 36px; height: 36px; border-radius: 10px; background: linear-gradient(135deg, var(--accent), var(--accent2)); display: flex; align-items: center; justify-content: center; font-weight: 900; color: white; font-size: 1.2rem; font-family: Georgia, serif; }
+  .lang-toggle { background: none; border: 1.5px solid var(--border); border-radius: 99px; padding: 5px 14px; font-size: 0.8rem; cursor: pointer; font-weight: 600; color: var(--muted); }
+
+  .hero { text-align: center; padding: 56px 20px 40px; max-width: 760px; margin: 0 auto; }
+  .hero h1 { font-size: clamp(1.9rem, 5vw, 3rem); font-weight: 900; line-height: 1.15; letter-spacing: -0.02em; }
+  .hero h1 .grad { background: linear-gradient(135deg, var(--accent), var(--accent2)); -webkit-background-clip: text; background-clip: text; color: transparent; }
+  .hero p { font-size: 1.08rem; color: var(--muted); margin: 18px auto 28px; max-width: 540px; }
+  .cta { display: inline-block; background: linear-gradient(135deg, var(--accent), var(--accent2)); color: white; font-weight: 700; font-size: 1.05rem; padding: 15px 36px; border-radius: 12px; text-decoration: none; box-shadow: 0 8px 24px rgba(14,165,233,0.35); transition: transform 0.15s; }
+  .cta:hover { transform: translateY(-2px); }
+  .cta-sub { font-size: 0.78rem; color: var(--muted); margin-top: 12px; }
+
+  .mock { max-width: 380px; margin: 40px auto 0; background: var(--primary); border-radius: 22px; padding: 18px 16px; color: white; box-shadow: 0 24px 60px rgba(15,23,42,0.35); text-align: left; }
+  .mock .mrow { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 7px; }
+  .mock .mstat { border-radius: 9px; padding: 9px 10px; font-size: 0.72rem; }
+  .mock .mstat b { display: block; font-size: 0.95rem; margin-top: 2px; }
+  .mock .ms-v { background: rgba(22,163,74,0.3); } .mock .ms-v b { color: #86efac; }
+  .mock .ms-g { background: rgba(239,68,68,0.25); } .mock .ms-g b { color: #fca5a5; }
+  .mock .ms-n { background: rgba(255,255,255,0.12); }
+  .mock .mbar { margin-top: 10px; background: rgba(255,255,255,0.08); border-radius: 8px; padding: 8px 12px; display: flex; justify-content: space-between; font-size: 0.78rem; }
+  .mock .mbar b { color: #86efac; }
+
+  section { max-width: 1000px; margin: 0 auto; padding: 48px 20px; }
+  .sec-title { text-align: center; font-size: 1.7rem; font-weight: 800; margin-bottom: 8px; }
+  .sec-sub { text-align: center; color: var(--muted); margin-bottom: 36px; }
+
+  .features { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 16px; }
+  .feat { background: var(--card); border: 1px solid var(--border); border-radius: 16px; padding: 22px; }
+  .feat .fi { font-size: 1.8rem; margin-bottom: 10px; }
+  .feat h3 { font-size: 1rem; margin-bottom: 6px; }
+  .feat p { font-size: 0.88rem; color: var(--muted); }
+
+  .pricing { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 16px; max-width: 700px; margin: 0 auto; }
+  .plan { background: var(--card); border: 1.5px solid var(--border); border-radius: 18px; padding: 26px 22px; text-align: center; }
+  .plan.featured { border-color: var(--accent); box-shadow: 0 10px 30px rgba(14,165,233,0.15); position: relative; }
+  .plan .badge { position: absolute; top: -11px; left: 50%; transform: translateX(-50%); background: var(--accent); color: white; font-size: 0.68rem; font-weight: 700; padding: 3px 12px; border-radius: 99px; letter-spacing: 0.04em; }
+  .plan h3 { font-size: 1rem; color: var(--muted); font-weight: 600; }
+  .plan .price { font-size: 2.2rem; font-weight: 900; margin: 8px 0 2px; }
+  .plan .per { font-size: 0.78rem; color: var(--muted); margin-bottom: 16px; }
+  .plan ul { list-style: none; text-align: left; font-size: 0.86rem; color: var(--text); margin-bottom: 20px; }
+  .plan ul li { padding: 5px 0; }
+  .plan ul li::before { content: '✓  '; color: var(--green); font-weight: 700; }
+  .plan a { display: block; background: var(--primary); color: white; text-decoration: none; font-weight: 700; padding: 12px; border-radius: 10px; font-size: 0.92rem; }
+  .plan.featured a { background: linear-gradient(135deg, var(--accent), var(--accent2)); }
+
+  footer { text-align: center; padding: 36px 20px 48px; color: var(--muted); font-size: 0.8rem; border-top: 1px solid var(--border); margin-top: 30px; }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="brand"><div class="logo-f">F</div> Flujo</div>
+  <button class="lang-toggle" onclick="toggleLang()" id="lang-btn">English</button>
+</div>
+
+<div class="hero">
+  <h1><span data-i18n="h1a">Finanzas claras para</span> <span class="grad" data-i18n="h1b">tu negocio</span></h1>
+  <p data-i18n="heroP">Registra ingresos y gastos en segundos, mira tu resultado del mes al instante y exporta todo a Excel. Sin contadores, sin complicaciones, desde tu celular o computadora.</p>
+  <a class="cta" href="app.html" data-i18n="ctaMain">Probar gratis ahora</a>
+  <div class="cta-sub" data-i18n="ctaSub">Sin tarjeta de crédito · Funciona en iPhone, Android y PC</div>
+
+  <div class="mock">
+    <div style="font-size:0.8rem;opacity:0.6;margin-bottom:10px" data-i18n="mockTitle">Tu negocio · Este mes</div>
+    <div class="mrow">
+      <div class="mstat ms-v"><span data-i18n="mockV">📈 Ingresos</span><b>+$2,125</b></div>
+      <div class="mstat ms-g"><span data-i18n="mockG">📉 Gastos</span><b>-$417</b></div>
+      <div class="mstat ms-n"><span data-i18n="mockN">⚖️ Resultado</span><b>+$1,708</b></div>
+    </div>
+    <div class="mbar"><span data-i18n="mockAll">⏳ Acumulado total</span><b>+$2,056</b></div>
+  </div>
+</div>
+
+<section>
+  <div class="sec-title" data-i18n="featTitle">Todo lo que necesitas, nada que te sobre</div>
+  <div class="sec-sub" data-i18n="featSub">Diseñada para dueños de negocios pequeños, no para contadores.</div>
+  <div class="features">
+    <div class="feat"><div class="fi">⚡</div><h3 data-i18n="f1t">Registro en segundos</h3><p data-i18n="f1p">Botones rápidos para tus productos y categorías. Registrar una venta toma menos que enviar un mensaje.</p></div>
+    <div class="feat"><div class="fi">📊</div><h3 data-i18n="f2t">Resultado al instante</h3><p data-i18n="f2p">Ingresos menos gastos, del mes y acumulado. Siempre sabes si estás ganando o perdiendo.</p></div>
+    <div class="feat"><div class="fi">📱</div><h3 data-i18n="f3t">En todos tus dispositivos</h3><p data-i18n="f3p">Funciona en iPhone, Android y computadora. Instálala como app sin pasar por tiendas.</p></div>
+    <div class="feat"><div class="fi">📥</div><h3 data-i18n="f4t">Exporta a Excel</h3><p data-i18n="f4p">Descarga todos tus meses ordenados con subtotales, listos para tu contador o el SRI.</p></div>
+    <div class="feat"><div class="fi">🌙</div><h3 data-i18n="f5t">Modo oscuro</h3><p data-i18n="f5p">Para revisar tus números de noche sin quemarte los ojos.</p></div>
+    <div class="feat"><div class="fi">🔒</div><h3 data-i18n="f6t">Tus datos son tuyos</h3><p data-i18n="f6p">Tu información financiera se guarda en tu dispositivo. Nadie más la ve.</p></div>
+  </div>
+</section>
+
+<section>
+  <div class="sec-title" data-i18n="priceTitle">Precio simple</div>
+  <div class="sec-sub" data-i18n="priceSub">Empieza gratis. Paga solo cuando te sea útil.</div>
+  <div class="pricing">
+    <div class="plan">
+      <h3 data-i18n="planFree">Gratis</h3>
+      <div class="price">$0</div>
+      <div class="per" data-i18n="forever">para siempre</div>
+      <ul>
+        <li data-i18n="pf1">Registro de ingresos y gastos</li>
+        <li data-i18n="pf2">Resumen mensual y acumulado</li>
+        <li data-i18n="pf3">Exportación a Excel</li>
+        <li data-i18n="pf4">Un dispositivo</li>
+      </ul>
+      <a href="app.html" data-i18n="startFree">Empezar gratis</a>
+    </div>
+    <div class="plan featured">
+      <div class="badge" data-i18n="soon">PRÓXIMAMENTE</div>
+      <h3>Pro</h3>
+      <div class="price">$4.99</div>
+      <div class="per" data-i18n="perMonth">por mes</div>
+      <ul>
+        <li data-i18n="pp1">Todo lo del plan gratis</li>
+        <li data-i18n="pp2">Sincronización entre dispositivos</li>
+        <li data-i18n="pp3">Respaldo automático en la nube</li>
+        <li data-i18n="pp4">Reportes avanzados</li>
+        <li data-i18n="pp5">Soporte prioritario</li>
+      </ul>
+      <a href="app.html" data-i18n="joinWait">Probar la versión gratis</a>
+    </div>
+  </div>
+</section>
+
+<footer>
+  © 2026 Flujo · <span data-i18n="footTag">Hecho para negocios pequeños de Latinoamérica y el mundo</span>
+</footer>
+
+<script>
+const I18N = {
+  es: null, // valores por defecto ya en el HTML
+  en: {
+    h1a:'Clear finances for', h1b:'your business',
+    heroP:'Log income and expenses in seconds, see your monthly result instantly, and export everything to Excel. No accountants, no complexity — from your phone or computer.',
+    ctaMain:'Try it free now', ctaSub:'No credit card · Works on iPhone, Android and PC',
+    mockTitle:'Your business · This month', mockV:'📈 Income', mockG:'📉 Expenses', mockN:'⚖️ Net', mockAll:'⏳ All-time total',
+    featTitle:'Everything you need, nothing you don’t', featSub:'Built for small business owners, not accountants.',
+    f1t:'Log in seconds', f1p:'Quick buttons for your products and categories. Recording a sale takes less than sending a text.',
+    f2t:'Instant results', f2p:'Income minus expenses, monthly and all-time. Always know if you’re winning or losing.',
+    f3t:'On all your devices', f3p:'Works on iPhone, Android and desktop. Install it as an app — no app stores needed.',
+    f4t:'Export to Excel', f4p:'Download all your months with subtotals, ready for your accountant or tax filing.',
+    f5t:'Dark mode', f5p:'Check your numbers at night without burning your eyes.',
+    f6t:'Your data is yours', f6p:'Your financial data stays on your device. Nobody else sees it.',
+    priceTitle:'Simple pricing', priceSub:'Start free. Pay only when it’s useful to you.',
+    planFree:'Free', forever:'forever',
+    pf1:'Income & expense tracking', pf2:'Monthly & all-time summary', pf3:'Excel export', pf4:'One device',
+    startFree:'Start free', soon:'COMING SOON', perMonth:'per month',
+    pp1:'Everything in Free', pp2:'Sync across devices', pp3:'Automatic cloud backup', pp4:'Advanced reports', pp5:'Priority support',
+    joinWait:'Try the free version', footTag:'Made for small businesses in Latin America and beyond',
+  }
+};
+const DEFAULTS = {};
+document.querySelectorAll('[data-i18n]').forEach(el=>DEFAULTS[el.getAttribute('data-i18n')]=el.textContent);
+let lang='es';
+function toggleLang(){
+  lang = lang==='es'?'en':'es';
+  document.querySelectorAll('[data-i18n]').forEach(el=>{
+    const k=el.getAttribute('data-i18n');
+    el.textContent = lang==='en' ? (I18N.en[k]||DEFAULTS[k]) : DEFAULTS[k];
+  });
+  document.getElementById('lang-btn').textContent = lang==='es'?'English':'Español';
+  document.documentElement.lang = lang;
+}
+</script>
+</body>
+</html>
