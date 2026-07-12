@@ -40,7 +40,10 @@ Vercel detecta el push y actualiza https://appflujo.vercel.app solo, en menos de
 ## Plan de fases
 
 - [x] **Fase 1** — App gratis + landing publicadas (11/07/2026)
-- [ ] **Fase 2** — Cuentas de usuario y sincronización en la nube
+- [x] **Fase 2** — Cuentas de usuario y sincronización en la nube con Supabase (11/07/2026)
+  - Proyecto Supabase: APPFLUJO (https://kwvwkbluwytizlzhjnew.supabase.co, región us-west-2)
+  - Tablas `records` y `user_settings` con seguridad por usuario (RLS)
+  - Registro sin confirmación de correo (decisión: menos fricción)
 - [ ] **Fase 3** — Suscripción Pro $4.99/mes con Stripe
 
 ## Ideas pendientes
