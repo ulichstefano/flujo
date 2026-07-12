@@ -385,7 +385,7 @@
       <p style="font-size:0.78rem;color:var(--green);margin-bottom:14px" id="auth-cloud-msg">✓ Tus datos se guardan en la nube automáticamente</p>
       <button class="btn" style="background:var(--bg);color:var(--red);border:1.5px solid var(--border)" id="auth-logout" onclick="doLogout()">Cerrar sesión</button>
     </div>
-    <button class="btn" style="background:var(--bg);color:var(--muted);border:1.5px solid var(--border);margin-top:10px" onclick="closeAuth()" id="auth-close">Cerrar</button>
+    <button class="btn" style="background:var(--bg);color:var(--muted);border:1.5px solid var(--border);margin-top:10px;display:none" onclick="closeAuth()" id="auth-close">Cerrar</button>
   </div>
 </div>
 
@@ -541,13 +541,18 @@ const toRow  = r => ({ id:r.id, type:r.type, cat:r.cat, amount:r.amount, date:r.
 const fromRow = w => ({ id:Number(w.id), type:w.type, cat:w.cat, amount:Number(w.amount), date:w.date, desc:w.descr||'', provider:w.provider||'', invoice:w.invoice||'', method:w.method||'' });
 
 async function initCloud(){
-  if(!sb) return;
+  if(!sb){ openAuth(); return; }
   try {
     const {data:{session}} = await sb.auth.getSession();
     sbUser = session?.user || null;
     updateAuthBtn();
-    if(sbUser) await syncFromCloud();
-  } catch(e){ console.warn('initCloud', e); }
+    if(sbUser){
+      await syncFromCloud();
+      if(!settings) openSettings(true);
+    } else {
+      openAuth();
+    }
+  } catch(e){ console.warn('initCloud', e); openAuth(); }
 }
 
 async function syncFromCloud(){
@@ -601,12 +606,13 @@ function applyAuthLang(){
 function openAuth(){
   document.getElementById('auth-form-section').style.display = sbUser?'none':'';
   document.getElementById('auth-logged-section').style.display = sbUser?'':'none';
+  document.getElementById('auth-close').style.display = sbUser?'':'none';
   if(sbUser) document.getElementById('auth-user-email').textContent = sbUser.email;
   document.getElementById('auth-error').style.display='none';
   applyAuthLang();
   document.getElementById('auth-modal').classList.add('open');
 }
-function closeAuth(){ document.getElementById('auth-modal').classList.remove('open'); }
+function closeAuth(){ if(!sbUser) return; document.getElementById('auth-modal').classList.remove('open'); }
 function switchAuthMode(){ authMode = authMode==='login'?'signup':'login'; applyAuthLang(); }
 
 async function doAuth(){
@@ -626,6 +632,7 @@ async function doAuth(){
     updateAuthBtn(); closeAuth();
     document.getElementById('auth-pass').value='';
     await syncFromCloud();
+    if(!settings) openSettings(true);
   } catch(e){
     err.textContent = e.message || T().authErr; err.style.display='';
   } finally { btn.disabled=false; }
@@ -633,7 +640,8 @@ async function doAuth(){
 
 async function doLogout(){
   try { await sb.auth.signOut(); } catch(e){}
-  sbUser=null; updateAuthBtn(); closeAuth();
+  sbUser=null; updateAuthBtn();
+  openAuth();
 }
 
 // ─── INIT ─────────────────────────────────────────────────
@@ -646,7 +654,7 @@ document.addEventListener('DOMContentLoaded', () => {
   buildQuickChips();
   applyLang();
   document.getElementById('manage-input')?.addEventListener('keydown',e=>{if(e.key==='Enter')addManageItem();});
-  if (!settings) openSettings(true); else render();
+  render();
   initCloud();
 });
 
