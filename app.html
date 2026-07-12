@@ -9,6 +9,7 @@
 <link rel="apple-touch-icon" href="flujo-icon.png">
 <meta name="theme-color" content="#0f172a">
 <title>Flujo · Finanzas para tu negocio</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; }
   :root {
@@ -181,6 +182,7 @@
       <h1 id="biz-name">Flujo</h1>
       <p id="header-subtitle"></p>
     </div>
+    <button class="hdr-btn" id="auth-btn" onclick="openAuth()">👤</button>
     <button class="hdr-btn" id="lang-btn" onclick="toggleLang()">EN</button>
     <button class="hdr-btn" id="dark-btn" onclick="toggleDark()">🌙</button>
     <button class="hdr-btn" onclick="openSettings()">⚙️</button>
@@ -363,6 +365,30 @@
   </div>
 </div>
 
+<!-- MODAL CUENTA / NUBE -->
+<div class="modal-overlay" id="auth-modal">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <div id="auth-form-section">
+      <h2 style="font-size:1.05rem;margin-bottom:4px" id="auth-title">☁️ Iniciar sesión</h2>
+      <p style="font-size:0.78rem;color:var(--muted);margin-bottom:14px" id="auth-sub">Guarda tus datos en la nube y úsalos en todos tus dispositivos.</p>
+      <div class="form-group"><label id="auth-label-email">Correo electrónico</label><input type="email" id="auth-email" autocomplete="email" inputmode="email"></div>
+      <div class="form-group"><label id="auth-label-pass">Contraseña (mínimo 6)</label><input type="password" id="auth-pass" autocomplete="current-password"></div>
+      <p id="auth-error" style="color:var(--red);font-size:0.78rem;margin-bottom:8px;display:none"></p>
+      <button class="btn btn-accent" id="auth-submit" onclick="doAuth()">Entrar</button>
+      <button id="auth-switch" onclick="switchAuthMode()" style="background:none;border:none;color:var(--accent);font-size:0.8rem;cursor:pointer;margin-top:12px;width:100%;text-align:center">¿No tienes cuenta? Crea una gratis</button>
+    </div>
+    <div id="auth-logged-section" style="display:none">
+      <h2 style="font-size:1.05rem;margin-bottom:4px" id="auth-logged-title">☁️ Cuenta</h2>
+      <p style="font-size:0.82rem;color:var(--muted);margin-bottom:4px" id="auth-logged-as">Sesión iniciada como</p>
+      <p style="font-size:0.92rem;font-weight:700;margin-bottom:14px" id="auth-user-email"></p>
+      <p style="font-size:0.78rem;color:var(--green);margin-bottom:14px" id="auth-cloud-msg">✓ Tus datos se guardan en la nube automáticamente</p>
+      <button class="btn" style="background:var(--bg);color:var(--red);border:1.5px solid var(--border)" id="auth-logout" onclick="doLogout()">Cerrar sesión</button>
+    </div>
+    <button class="btn" style="background:var(--bg);color:var(--muted);border:1.5px solid var(--border);margin-top:10px" onclick="closeAuth()" id="auth-close">Cerrar</button>
+  </div>
+</div>
+
 <!-- TOAST -->
 <div class="modal-overlay" id="toast-modal" onclick="closeToast()">
   <div class="modal" style="padding:22px 16px 30px">
@@ -414,6 +440,15 @@ const I18N = {
     typeIncome:'Ingreso', typeExpense:'Gasto',
     cats:{inventario:'Inventario',envios:'Envíos',marketing:'Marketing',impuestos:'Impuestos',nomina:'Nómina',servicios:'Servicios',alquiler:'Alquiler',transporte:'Transporte',banco:'Banco/Fin.',legal:'Legal/Cont.',mantenimiento:'Mantenim.',otro_g:'Otro'},
     exDesc:'Ej: Pago publicidad', exProd:'Ej: 2 unidades Producto A', exProv:'Ej: Mi proveedor', exClient:'Nombre del cliente',
+    authLogin:'☁️ Iniciar sesión', authSignup:'☁️ Crear cuenta gratis',
+    authSub:'Guarda tus datos en la nube y úsalos en todos tus dispositivos.',
+    authEmail:'Correo electrónico', authPass:'Contraseña (mínimo 6 caracteres)',
+    authEnter:'Entrar', authCreate:'Crear cuenta',
+    authToSignup:'¿No tienes cuenta? Crea una gratis', authToLogin:'¿Ya tienes cuenta? Inicia sesión',
+    authAccount:'☁️ Cuenta', authLoggedAs:'Sesión iniciada como',
+    authCloudMsg:'✓ Tus datos se guardan en la nube automáticamente',
+    authLogout:'Cerrar sesión', authClose:'Cerrar',
+    authErr:'Revisa el correo y la contraseña e intenta de nuevo.',
   },
   en: {
     hIncome:'📈 MONTH INCOME', hExpense:'📉 MONTH EXPENSES', hNet:'⚖️ NET RESULT',
@@ -450,6 +485,15 @@ const I18N = {
     typeIncome:'Income', typeExpense:'Expense',
     cats:{inventario:'Inventory',envios:'Shipping',marketing:'Marketing',impuestos:'Taxes',nomina:'Payroll',servicios:'Services',alquiler:'Rent',transporte:'Transport',banco:'Bank/Fin.',legal:'Legal/Acct.',mantenimiento:'Maintenance',otro_g:'Other'},
     exDesc:'E.g.: Ad payment', exProd:'E.g.: 2 units Product A', exProv:'E.g.: My supplier', exClient:'Customer name',
+    authLogin:'☁️ Log in', authSignup:'☁️ Create free account',
+    authSub:'Save your data to the cloud and use it on all your devices.',
+    authEmail:'Email', authPass:'Password (min. 6 characters)',
+    authEnter:'Log in', authCreate:'Create account',
+    authToSignup:'No account? Create one for free', authToLogin:'Already have an account? Log in',
+    authAccount:'☁️ Account', authLoggedAs:'Signed in as',
+    authCloudMsg:'✓ Your data is saved to the cloud automatically',
+    authLogout:'Log out', authClose:'Close',
+    authErr:'Check your email and password and try again.',
   }
 };
 
@@ -484,8 +528,113 @@ const fmt = n => CUR() + n.toFixed(2);
 
 let curType='gasto', selCatG='inventario', viewMonth=new Date(), histFilter='all', manageKey='';
 function save(){ localStorage.setItem('flujo_records_v1', JSON.stringify(records)); }
-function saveQuick(){ localStorage.setItem('flujo_quick_v1', JSON.stringify(quickData)); }
-function saveSet(){ localStorage.setItem('flujo_settings_v1', JSON.stringify(settings)); }
+function saveQuick(){ localStorage.setItem('flujo_quick_v1', JSON.stringify(quickData)); cloudSaveBlob(); }
+function saveSet(){ localStorage.setItem('flujo_settings_v1', JSON.stringify(settings)); cloudSaveBlob(); }
+
+// ─── NUBE (SUPABASE) ──────────────────────────────────────
+const SB_URL='https://kwvwkbluwytizlzhjnew.supabase.co';
+const SB_KEY='sb_publishable_NZ3tm2rMx_b6H1-eyBqLcw_pRGw_pk4';
+let sb=null, sbUser=null, authMode='login';
+try { sb = window.supabase.createClient(SB_URL, SB_KEY); } catch(e) { console.warn('Supabase no disponible', e); }
+
+const toRow  = r => ({ id:r.id, type:r.type, cat:r.cat, amount:r.amount, date:r.date, descr:r.desc||'', provider:r.provider||'', invoice:r.invoice||'', method:r.method||'' });
+const fromRow = w => ({ id:Number(w.id), type:w.type, cat:w.cat, amount:Number(w.amount), date:w.date, desc:w.descr||'', provider:w.provider||'', invoice:w.invoice||'', method:w.method||'' });
+
+async function initCloud(){
+  if(!sb) return;
+  try {
+    const {data:{session}} = await sb.auth.getSession();
+    sbUser = session?.user || null;
+    updateAuthBtn();
+    if(sbUser) await syncFromCloud();
+  } catch(e){ console.warn('initCloud', e); }
+}
+
+async function syncFromCloud(){
+  try {
+    const {data:rows, error} = await sb.from('records').select('*');
+    if(error) throw error;
+    const cloudIds = new Set(rows.map(r=>Number(r.id)));
+    const localOnly = records.filter(r=>!cloudIds.has(r.id));
+    if(localOnly.length) await sb.from('records').upsert(localOnly.map(toRow));
+    records = rows.map(fromRow).concat(localOnly).sort((a,b)=>b.id-a.id);
+    localStorage.setItem('flujo_records_v1', JSON.stringify(records));
+    const {data:us} = await sb.from('user_settings').select('data').maybeSingle();
+    if(us?.data?.settings){
+      settings = us.data.settings;
+      if(us.data.quickData) quickData = us.data.quickData;
+      LANG = settings.lang || LANG;
+      localStorage.setItem('flujo_settings_v1', JSON.stringify(settings));
+      localStorage.setItem('flujo_quick_v1', JSON.stringify(quickData));
+      applyLang(); buildQuickChips();
+    } else {
+      cloudSaveBlob();
+    }
+    render();
+  } catch(e){ console.warn('sync', e); }
+}
+
+function cloudUpsert(rec){ if(sb&&sbUser) sb.from('records').upsert(toRow(rec)).then(()=>{}, e=>console.warn(e)); }
+function cloudDeleteRec(id){ if(sb&&sbUser) sb.from('records').delete().eq('id',id).then(()=>{}, e=>console.warn(e)); }
+function cloudSaveBlob(){ if(sb&&sbUser) sb.from('user_settings').upsert({user_id:sbUser.id, data:{settings,quickData}}).then(()=>{}, e=>console.warn(e)); }
+
+// ─── AUTH UI ──────────────────────────────────────────────
+function updateAuthBtn(){
+  const b=document.getElementById('auth-btn');
+  b.textContent = sbUser ? '☁️' : '👤';
+  b.style.borderColor = sbUser ? 'rgba(74,222,128,0.6)' : 'rgba(255,255,255,0.2)';
+}
+function applyAuthLang(){
+  const t=T();
+  document.getElementById('auth-title').textContent = authMode==='login'?t.authLogin:t.authSignup;
+  document.getElementById('auth-sub').textContent = t.authSub;
+  document.getElementById('auth-label-email').textContent = t.authEmail;
+  document.getElementById('auth-label-pass').textContent = t.authPass;
+  document.getElementById('auth-submit').textContent = authMode==='login'?t.authEnter:t.authCreate;
+  document.getElementById('auth-switch').textContent = authMode==='login'?t.authToSignup:t.authToLogin;
+  document.getElementById('auth-logged-title').textContent = t.authAccount;
+  document.getElementById('auth-logged-as').textContent = t.authLoggedAs;
+  document.getElementById('auth-cloud-msg').textContent = t.authCloudMsg;
+  document.getElementById('auth-logout').textContent = t.authLogout;
+  document.getElementById('auth-close').textContent = t.authClose;
+}
+function openAuth(){
+  document.getElementById('auth-form-section').style.display = sbUser?'none':'';
+  document.getElementById('auth-logged-section').style.display = sbUser?'':'none';
+  if(sbUser) document.getElementById('auth-user-email').textContent = sbUser.email;
+  document.getElementById('auth-error').style.display='none';
+  applyAuthLang();
+  document.getElementById('auth-modal').classList.add('open');
+}
+function closeAuth(){ document.getElementById('auth-modal').classList.remove('open'); }
+function switchAuthMode(){ authMode = authMode==='login'?'signup':'login'; applyAuthLang(); }
+
+async function doAuth(){
+  const email=document.getElementById('auth-email').value.trim();
+  const pass=document.getElementById('auth-pass').value;
+  const err=document.getElementById('auth-error');
+  err.style.display='none';
+  if(!email||pass.length<6){ err.textContent=T().authErr; err.style.display=''; return; }
+  const btn=document.getElementById('auth-submit'); btn.disabled=true;
+  try {
+    const fn = authMode==='login'
+      ? sb.auth.signInWithPassword({email, password:pass})
+      : sb.auth.signUp({email, password:pass});
+    const {data, error} = await fn;
+    if(error) throw error;
+    sbUser = data.user || data.session?.user;
+    updateAuthBtn(); closeAuth();
+    document.getElementById('auth-pass').value='';
+    await syncFromCloud();
+  } catch(e){
+    err.textContent = e.message || T().authErr; err.style.display='';
+  } finally { btn.disabled=false; }
+}
+
+async function doLogout(){
+  try { await sb.auth.signOut(); } catch(e){}
+  sbUser=null; updateAuthBtn(); closeAuth();
+}
 
 // ─── INIT ─────────────────────────────────────────────────
 document.addEventListener('DOMContentLoaded', () => {
@@ -498,6 +647,7 @@ document.addEventListener('DOMContentLoaded', () => {
   applyLang();
   document.getElementById('manage-input')?.addEventListener('keydown',e=>{if(e.key==='Enter')addManageItem();});
   if (!settings) openSettings(true); else render();
+  initCloud();
 });
 
 // ─── SETTINGS / ONBOARDING ────────────────────────────────
@@ -628,7 +778,7 @@ function saveRecord(){
     invoice: curType==='gasto'?document.getElementById('input-invoice').value.trim():'',
     method: document.getElementById('input-method').value,
   };
-  records.unshift(rec); save();
+  records.unshift(rec); save(); cloudUpsert(rec);
   ['input-amount','input-desc','input-provider','input-invoice'].forEach(id=>document.getElementById(id).value='');
   document.getElementById('input-date').value=todayStr();
   const catObj=getCat(curType,cat); const isV=curType==='venta';
@@ -640,7 +790,7 @@ function saveRecord(){
   render();
 }
 function closeToast(){ document.getElementById('toast-modal').classList.remove('open'); }
-function deleteRecord(id){ if(!confirm(T().confirmDelete)) return; records=records.filter(r=>r.id!==id); save(); render(); }
+function deleteRecord(id){ if(!confirm(T().confirmDelete)) return; records=records.filter(r=>r.id!==id); save(); cloudDeleteRec(id); render(); }
 function changeMonth(dir){ viewMonth=new Date(viewMonth.getFullYear(),viewMonth.getMonth()+dir,1); render(); }
 
 // ─── RENDER ───────────────────────────────────────────────
@@ -826,7 +976,7 @@ function saveEdit(){
     invoice:document.getElementById('edit-invoice').value.trim(),
     method:document.getElementById('edit-method').value,
   };
-  save(); closeEditModal(); render();
+  save(); cloudUpsert(records[idx]); closeEditModal(); render();
 }
 
 // ─── GESTIONAR LISTAS ─────────────────────────────────────
