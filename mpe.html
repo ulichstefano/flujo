@@ -84,6 +84,9 @@
   .quick-chip.client-chip:hover { border-color: var(--green); color: var(--green); }
   .quick-chip.courier-chip:hover { border-color: #3b82f6; color: #3b82f6; }
   .quick-chip.add-chip { border-style: dashed; color: var(--muted); font-size: 0.72rem; }
+  .quick-chip.city-chip:hover { border-color: #8b5cf6; color: #8b5cf6; }
+  .quick-chip.city-chip.selected { background: #8b5cf6; border-color: #8b5cf6; color: white; font-weight: 600; }
+  body.dark .quick-chip.city-chip.selected { color: white; }
 
   /* FORM */
   .form-group { margin-bottom: 10px; }
@@ -239,6 +242,11 @@
           <button onclick="openManage('productos')" style="background:none;border:none;font-size:0.72rem;color:var(--muted);cursor:pointer">⚙️ Editar</button>
         </div>
         <div class="quick-row" id="quick-productos"></div>
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:7px;margin-top:4px">
+          <h2 style="margin:0">📍 Ciudad</h2>
+          <button onclick="openManage('ciudades')" style="background:none;border:none;font-size:0.72rem;color:var(--muted);cursor:pointer">⚙️ Editar</button>
+        </div>
+        <div class="quick-row" id="quick-ciudades"></div>
       </div>
 
       <!-- GASTO: categorías + courier rápido -->
@@ -341,6 +349,7 @@
       <div class="form-group"><label>Fecha</label><input type="date" id="edit-date"></div>
     </div>
     <div class="form-group"><label>Descripción</label><input type="text" id="edit-desc"></div>
+    <div class="form-group" id="edit-city-group" style="display:none"><label>📍 Ciudad</label><input type="text" id="edit-city" placeholder="Ej: Guayaquil"></div>
     <div class="form-row" style="margin-bottom:10px">
       <div class="form-group"><label id="edit-label-contact">Proveedor / Cliente</label><input type="text" id="edit-provider"></div>
       <div class="form-group" id="edit-invoice-group"><label>N° Factura</label><input type="text" id="edit-invoice"></div>
@@ -449,11 +458,14 @@ let quickData = JSON.parse(localStorage.getItem('mpe_quick_v1') || 'null') || {
   productos: ['BTXA', 'Exobooster', 'Exoskin', 'Agujas 5PIN', 'Cánulas', 'Viales'],
   clientes:  [],
   couriers:  ['Isabel Dueñas', 'Steve Bohrer'],
+  ciudades:  ['Guayaquil', 'Quito', 'Cuenca', 'Manta', 'Machala', 'Ambato'],
 };
+if (!quickData.ciudades) quickData.ciudades = ['Guayaquil', 'Quito', 'Cuenca', 'Manta', 'Machala', 'Ambato'];
 function saveQuick() { localStorage.setItem('mpe_quick_v1', JSON.stringify(quickData)); }
 
 let curType    = 'gasto';
 let selCatG    = 'producto';
+let selCity    = '';
 let viewMonth  = new Date();
 let histFilter = 'all';
 let manageKey  = '';
@@ -466,8 +478,9 @@ const SB_KEY='sb_publishable_NZ3tm2rMx_b6H1-eyBqLcw_pRGw_pk4';
 let sbc=null, sbUser=null, authMode='login';
 try { sbc = window.supabase.createClient(SB_URL, SB_KEY); } catch(e) { console.warn('Supabase no disponible', e); }
 
-const toRow  = r => ({ id:r.id, type:r.type, cat:r.cat, amount:r.amount, date:r.date, descr:r.desc||'', provider:r.provider||'', invoice:r.invoice||'', method:r.method||'' });
-const fromRow = w => ({ id:Number(w.id), type:w.type, cat:w.cat, amount:Number(w.amount), date:w.date, desc:w.descr||'', provider:w.provider||'', invoice:w.invoice||'', method:w.method||'' });
+// En ventas la columna "invoice" (que no se usa en ventas) transporta la ciudad a la nube, sin migrar la BD.
+const toRow  = r => ({ id:r.id, type:r.type, cat:r.cat, amount:r.amount, date:r.date, descr:r.desc||'', provider:r.provider||'', invoice:(r.type==='venta'?(r.city||''):(r.invoice||'')), method:r.method||'' });
+const fromRow = w => ({ id:Number(w.id), type:w.type, cat:w.cat, amount:Number(w.amount), date:w.date, desc:w.descr||'', provider:w.provider||'', invoice:(w.type==='venta'?'':(w.invoice||'')), city:(w.type==='venta'?(w.invoice||''):''), method:w.method||'' });
 
 async function initCloud(){
   if(!sbc) return;
@@ -624,6 +637,24 @@ function buildQuickChips() {
       qr.appendChild(chip);
     });
   }
+  // Ciudades
+  const qci = document.getElementById('quick-ciudades');
+  if (qci) {
+    qci.innerHTML = '';
+    quickData.ciudades.forEach(c => {
+      const chip = document.createElement('button');
+      chip.className = 'quick-chip city-chip' + (selCity === c ? ' selected' : '');
+      chip.textContent = '📍 ' + c;
+      chip.onclick = () => { selCity = (selCity === c ? '' : c); buildQuickChips(); };
+      qci.appendChild(chip);
+    });
+    if (!quickData.ciudades.length) {
+      const hint = document.createElement('span');
+      hint.style.cssText = 'font-size:0.73rem;color:var(--muted);font-style:italic';
+      hint.textContent = 'Agrega tus ciudades con ⚙️ Editar';
+      qci.appendChild(hint);
+    }
+  }
 }
 
 function todayStr() { return new Date().toISOString().slice(0,10); }
@@ -683,6 +714,7 @@ function saveRecord() {
     provider,
     invoice:  curType==='gasto' ? document.getElementById('input-invoice').value.trim() : '',
     method:   document.getElementById('input-method').value,
+    city:     curType==='venta' ? selCity : '',
   };
   records.unshift(rec);
   cloudUpsert(rec);
@@ -697,6 +729,7 @@ function saveRecord() {
 
   ['input-amount','input-desc','input-provider','input-invoice'].forEach(id=>document.getElementById(id).value='');
   document.getElementById('input-date').value = todayStr();
+  selCity = ''; buildQuickChips();
 
   const catObj = getCat(curType, cat);
   const isV    = curType==='venta';
@@ -798,7 +831,7 @@ function renderHistory(monthRecs,ventas,gastos,neto) {
     ].filter(Boolean).join(' ');
     const rows=items.map(r=>{
       const cat=getCat(r.type,r.cat);
-      const meta=[r.type==='venta'?'Venta':cat.label,r.provider,r.invoice?'Fact:'+r.invoice:'',METHODS[r.method]||r.method].filter(Boolean).join(' · ');
+      const meta=[r.type==='venta'?'Venta':cat.label,r.provider,r.city?'📍'+r.city:'',r.invoice?'Fact:'+r.invoice:'',METHODS[r.method]||r.method].filter(Boolean).join(' · ');
       return `<div class="expense-item">
         <div class="expense-icon" style="background:${cat.color}22">${cat.icon}</div>
         <div class="expense-info">
@@ -891,6 +924,7 @@ function openEditModal(id) {
   document.getElementById('edit-desc').value     =r.desc;
   document.getElementById('edit-provider').value =r.provider||'';
   document.getElementById('edit-invoice').value  =r.invoice||'';
+  document.getElementById('edit-city').value     =r.city||'';
   document.getElementById('edit-method').value   =r.method||'efectivo';
   setEditType(editType);
   document.querySelectorAll('#edit-cat-grid-gasto .cat-chip').forEach(c=>c.classList.remove('selected-gasto'));
@@ -905,6 +939,7 @@ function setEditType(t) {
   document.getElementById('edit-section-cat-gasto').style.display=t==='gasto'?'':'none';
   document.getElementById('edit-section-cat-venta').style.display=t==='venta'?'':'none';
   document.getElementById('edit-invoice-group').style.display=t==='gasto'?'':'none';
+  document.getElementById('edit-city-group').style.display=t==='venta'?'':'none';
   document.getElementById('edit-label-contact').textContent=t==='gasto'?'Proveedor':'Cliente';
   document.getElementById('edit-save-btn').className='btn '+(t==='gasto'?'btn-gasto':'btn-venta');
 }
@@ -930,7 +965,8 @@ function saveEdit(){
   records[idx]={...records[idx],type:editType,cat,amount,
     date:    document.getElementById('edit-date').value,
     desc:    document.getElementById('edit-desc').value.trim()||getCat(editType,cat).label,
-    provider, invoice:document.getElementById('edit-invoice').value.trim(),
+    provider, invoice:editType==='gasto'?document.getElementById('edit-invoice').value.trim():'',
+    city:    editType==='venta'?document.getElementById('edit-city').value.trim():'',
     method:  document.getElementById('edit-method').value,
   };
   // Autoguardar cliente al editar
@@ -943,7 +979,7 @@ function saveEdit(){
 // ─── GESTIONAR LISTAS RÁPIDAS ─────────────────────────────
 function openManage(key) {
   manageKey=key;
-  const titles={productos:'Productos rápidos',clientes:'Clientes guardados',couriers:'Couriers frecuentes'};
+  const titles={productos:'Productos rápidos',clientes:'Clientes guardados',couriers:'Couriers frecuentes',ciudades:'Ciudades'};
   document.getElementById('manage-title').textContent='⚙️ '+titles[key];
   document.getElementById('manage-input').value='';
   renderManageList();
@@ -1001,7 +1037,8 @@ function exportCSV(){
     rows.push(['Fecha','Tipo','Categoría','Descripción','Proveedor / Cliente','Monto']);
     data.forEach(r=>{
       const[ry,rm,rd]=r.date.split('-');
-      rows.push([`${rd}/${rm}/${ry}`,r.type==='venta'?'Venta':'Gasto',getCat(r.type,r.cat).label,r.desc,r.provider||'',(r.type==='venta'?'+':'-')+r.amount.toFixed(2).replace('.',',')]);
+      const contacto=(r.provider||'')+(r.city?(r.provider?' ':'')+'('+r.city+')':'');
+      rows.push([`${rd}/${rm}/${ry}`,r.type==='venta'?'Venta':'Gasto',getCat(r.type,r.cat).label,r.desc,contacto,(r.type==='venta'?'+':'-')+r.amount.toFixed(2).replace('.',',')]);
     });
     rows.push(['','','','Ventas del mes','','+'+ventas.toFixed(2).replace('.',',')]);
     rows.push(['','','','Gastos del mes','','-'+gastos.toFixed(2).replace('.',',')]);
