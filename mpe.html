@@ -1033,24 +1033,23 @@ function exportCSV(){
     const gastos=data.filter(r=>r.type==='gasto').reduce((s,r)=>s+r.amount,0);
     const neto=ventas-gastos;
     totalAllV+=ventas; totalAllG+=gastos;
-    rows.push([`=== ${label} ===`,'','','','','']);
-    rows.push(['Fecha','Tipo','Categoría','Descripción','Proveedor / Cliente','Monto']);
+    rows.push([`=== ${label} ===`,'','','','','','']);
+    rows.push(['Fecha','Tipo','Categoría','Descripción','Proveedor / Cliente','Ciudad','Monto']);
     data.forEach(r=>{
       const[ry,rm,rd]=r.date.split('-');
-      const contacto=(r.provider||'')+(r.city?(r.provider?' ':'')+'('+r.city+')':'');
-      rows.push([`${rd}/${rm}/${ry}`,r.type==='venta'?'Venta':'Gasto',getCat(r.type,r.cat).label,r.desc,contacto,(r.type==='venta'?'+':'-')+r.amount.toFixed(2).replace('.',',')]);
+      rows.push([`${rd}/${rm}/${ry}`,r.type==='venta'?'Venta':'Gasto',getCat(r.type,r.cat).label,r.desc,r.provider||'',r.city||'',(r.type==='venta'?'+':'-')+r.amount.toFixed(2).replace('.',',')]);
     });
-    rows.push(['','','','Ventas del mes','','+'+ventas.toFixed(2).replace('.',',')]);
-    rows.push(['','','','Gastos del mes','','-'+gastos.toFixed(2).replace('.',',')]);
-    rows.push(['','','','Resultado del mes','',(neto>=0?'+':'-')+Math.abs(neto).toFixed(2).replace('.',',')]);
-    rows.push(['','','','','','']);
+    rows.push(['','','','Ventas del mes','','','+'+ventas.toFixed(2).replace('.',',')]);
+    rows.push(['','','','Gastos del mes','','','-'+gastos.toFixed(2).replace('.',',')]);
+    rows.push(['','','','Resultado del mes','','',(neto>=0?'+':'-')+Math.abs(neto).toFixed(2).replace('.',',')]);
+    rows.push(['','','','','','','']);
   });
 
   const totalNeto=totalAllV-totalAllG;
-  rows.push(['=== RESUMEN TOTAL (TODO EL TIEMPO) ===','','','','','']);
-  rows.push(['','','','VENTAS TOTALES','','+'+totalAllV.toFixed(2).replace('.',',')]);
-  rows.push(['','','','GASTOS TOTALES','','-'+totalAllG.toFixed(2).replace('.',',')]);
-  rows.push(['','','','RESULTADO ACUMULADO','',(totalNeto>=0?'+':'-')+Math.abs(totalNeto).toFixed(2).replace('.',',')]);
+  rows.push(['=== RESUMEN TOTAL (TODO EL TIEMPO) ===','','','','','','']);
+  rows.push(['','','','VENTAS TOTALES','','','+'+totalAllV.toFixed(2).replace('.',',')]);
+  rows.push(['','','','GASTOS TOTALES','','','-'+totalAllG.toFixed(2).replace('.',',')]);
+  rows.push(['','','','RESULTADO ACUMULADO','','',(totalNeto>=0?'+':'-')+Math.abs(totalNeto).toFixed(2).replace('.',',')]);
 
   const csv=rows.map(r=>r.join(';')).join('\n');
   const blob=new Blob(['﻿'+csv],{type:'text/csv;charset=utf-8;'});
