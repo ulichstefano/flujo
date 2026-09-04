@@ -442,7 +442,10 @@ const CATS_GASTO = [
 const VENTA_CAT = { id: 'venta_prod', label: 'Venta producto', icon: '🛒', color: '#16a34a' };
 const METHODS   = { efectivo:'💵 Efectivo', transferencia:'🏦 Transferencia', tarjeta:'💳 Tarjeta', cheque:'📄 Cheque', otro:'📦 Otro' };
 
-const getCatGasto = id => CATS_GASTO.find(c=>c.id===id) || CATS_GASTO[CATS_GASTO.length-1];
+// Reconocer también IDs de categoría de la app Flujo (para que no salgan como "Otro")
+const CAT_NORM = { inventario:'producto', transporte:'courier', impuestos:'impuesto', envios:'envio', servicios:'plataforma', alquiler:'oficina', mantenimiento:'oficina' };
+const normCatId = id => CAT_NORM[id] || id;
+const getCatGasto = id => CATS_GASTO.find(c=>c.id===normCatId(id)) || CATS_GASTO[CATS_GASTO.length-1];
 const getCat = (type, id) => type==='venta' ? VENTA_CAT : getCatGasto(id);
 
 // ─── ESTADO ───────────────────────────────────────────────
@@ -875,7 +878,7 @@ function renderSummary(monthRecs,ventas,gastos,neto) {
   if(!gastoRecs.length){bars.innerHTML=`<div class="empty"><div class="emoji">📊</div><p>Sin gastos este mes</p></div>`;}
   else {
     const bycat={};
-    gastoRecs.forEach(r=>bycat[r.cat]=(bycat[r.cat]||0)+r.amount);
+    gastoRecs.forEach(r=>{const k=normCatId(r.cat);bycat[k]=(bycat[k]||0)+r.amount;});
     const sorted=Object.entries(bycat).sort((a,b)=>b[1]-a[1]);
     const max=sorted[0]?.[1]||1;
     bars.innerHTML=sorted.map(([catId,sum])=>{
